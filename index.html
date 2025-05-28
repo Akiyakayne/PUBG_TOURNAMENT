@@ -79,18 +79,26 @@
   <script>
     // ID вашей Google таблицы
     const spreadsheetId = '10mJj4_VTawZQN9ijcncl7wK0UZVHFN9yz5cVD_oQba0';
-    // Диапазон данных (название команды и очки)
-    const range = '!B6:D17'; // Предполагаем, что название команды в B, очки в D
+    // Диапазон данных (B-D колонки, строки 6-17)
+    const range = '!B6:D17';
     // API ключ
     const apiKey = 'AIzaSyBpzlXMQaNxIxPXMsclD36rSpxibhf-kvY';
     
+    // Функция для объединения названия команды из двух ячеек
+    function getTeamName(row) {
+      const part1 = row[0] || ''; // Ячейка B
+      const part2 = row[1] || ''; // Ячейка C
+      return `${part1} ${part2}`.trim();
+    }
+    
     // Функция для сортировки по очкам (по убыванию)
     function sortByPoints(data) {
-      return data.sort((a, b) => {
-        const pointsA = parseInt(a[2] || 0); // Очки в третьей колонке
-        const pointsB = parseInt(b[2] || 0);
-        return pointsB - pointsA;
-      });
+      return data.filter(row => row[2]) // Фильтруем пустые строки
+        .map(row => ({
+          name: getTeamName(row),
+          points: parseInt(row[2] || 0) // Ячейка D с очками
+        }))
+        .sort((a, b) => b.points - a.points);
     }
     
     // Функция для загрузки данных
@@ -101,12 +109,11 @@
           const tableBody = document.getElementById('table-body');
           tableBody.innerHTML = '';
           
-          // Удаляем заголовок если он есть и сортируем
-          const dataToShow = rawData.slice(1); // Пропускаем заголовок
-          const sortedData = sortByPoints(dataToShow);
+          // Сортируем данные
+          const sortedData = sortByPoints(rawData);
           
           // Заполняем таблицу
-          sortedData.forEach((row, index) => {
+          sortedData.forEach((team, index) => {
             const tr = document.createElement('tr');
             if (index <= 2) { // Подсвечиваем топ-3
               tr.classList.add('highlight');
@@ -114,8 +121,8 @@
             
             tr.innerHTML = `
               <td class="position">${index + 1}</td>
-              <td class="team-name">${row[0] || ''}</td>
-              <td class="points">${row[2] || '0'}</td>
+              <td class="team-name">${team.name}</td>
+              <td class="points">${team.points}</td>
             `;
             
             tableBody.appendChild(tr);
