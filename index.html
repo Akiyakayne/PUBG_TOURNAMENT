@@ -1,125 +1,125 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Таблица турнира</title>
+  <meta charset="utf-8">
+  <title>Турнирная таблица</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     body {
-      font-family: 'Fira Sans', sans-serif;
-      background-color: #0d1117; /* Темный фон */
-      color: white;
+      background-color: transparent;
+      font-family: 'Arial', sans-serif;
       margin: 0;
       padding: 0;
     }
-    h1 {
-      text-align: center;
-      margin-top: 20px;
-    }
-    table {
+    .tournament-table {
       width: 100%;
       border-collapse: collapse;
-      color: white;
-      background: #111;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border-radius: 8px;
     }
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border: 1px solid #333;
-    }
-    img {
-      width: 30px;
-      height: 30px;
-      object-fit: cover;
-      border-radius: 50%;
-      margin-right: 10px;
-    }
-    .group-header {
+    .tournament-table th {
       background-color: #2c3e50;
       color: white;
-      text-align: center;
+      padding: 12px 15px;
+      text-align: left;
       font-weight: bold;
     }
-    .logo-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 20px;
+    .tournament-table td {
+      padding: 10px 15px;
+      border-bottom: 1px solid #dddddd;
     }
-    .logo {
-      width: 200px;
+    .tournament-table tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+    .tournament-table tr:nth-child(odd) {
+      background-color: #ffffff;
+    }
+    .tournament-table tr:hover {
+      background-color: #e9ecef;
+    }
+    .position {
+      font-weight: bold;
+      color: #2c3e50;
+      width: 40px;
+    }
+    .team-name {
+      font-weight: bold;
+    }
+    .points {
+      color: #27ae60;
+      font-weight: bold;
+      text-align: center;
+    }
+    .header-row {
+      background-color: #34495e !important;
+      color: white;
+    }
+    .highlight {
+      background-color: #fffacd !important;
     }
   </style>
 </head>
 <body>
-  <div class="logo-container">
-    <img src="F:\Akiakane\WORK\LANIT PUBG\Банер 1 без фона.png" alt="Логотип турнира" class="logo">
-  </div>
-  <h1>PUBG Europe Contenders</h1>
-  <div id="table"></div>
+  <table class="tournament-table" id="leaderboard">
+    <thead>
+      <tr class="header-row">
+        <th>#</th>
+        <th>Команда</th>
+        <th>Игроки</th>
+        <th>Очки</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <!-- Данные будут загружены здесь -->
+    </tbody>
+  </table>
 
   <script>
-    const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/10mJj4_VTawZQN9ijcncl7wK0UZVHFN9yz5cVD_oQba0/edit?gid=0#gid=0&range=B5:E17';
-
-    fetch(googleSheetUrl)
-      .then(res => res.text())
-      .then(data => {
-        const json = JSON.parse(data.match(/.*\((.*)\)/)[1]);
-        const table = document.createElement('table');
-        const tr = document.createElement('tr');
-
-        // Создаем заголовки
-        tr.innerHTML = `
-          <th class="group-header">STANDINGS GROUP A</th>
-          <th class="group-header">TOTAL PTS</th>
-          <th class="group-header">STANDINGS GROUP B</th>
-          <th class="group-header">TOTAL PTS</th>
-        `;
-        table.appendChild(tr);
-
-        // Разделяем данные на две группы
-        const groupA = [];
-        const groupB = [];
-        json.table.rows.forEach(row => {
-          if (row.c[0].v % 2 === 0) { // Простой способ разделить на группы
-            groupA.push(row);
-          } else {
-            groupB.push(row);
-          }
+    // ID вашей Google таблицы
+    const spreadsheetId = '10mJj4_VTawZQN9ijcncl7wK0UZVHFN9yz5cVD_oQba0';
+    // Диапазон данных (B6:E17)
+    const range = '!B6:D17';
+    // API ключ (нужно создать в Google Cloud Console)
+    const apiKey = 'AIzaSyBpzlXMQaNxIxPXMsclD36rSpxibhf-kvY'; // Замените на ваш API ключ
+    
+    // URL для запроса данных
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
+    
+    // Функция для загрузки данных
+    function loadData() {
+      axios.get(url)
+        .then(response => {
+          const data = response.data.values;
+          const tableBody = document.getElementById('table-body');
+          tableBody.innerHTML = '';
+          
+          data.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            if (index === 0) {
+              tr.className = 'header-row';
+            } else if (index <= 3) {
+              tr.className = 'highlight';
+            }
+            
+            tr.innerHTML = `
+              <td class="position">${index + 1}</td>
+              <td class="team-name">${row[0] || ''}</td>
+              <td>${row[1] || ''}</td>
+              <td class="points">${row[2] || '0'}</td>
+            `;
+            
+            tableBody.appendChild(tr);
+          });
+        })
+        .catch(error => {
+          console.error('Ошибка загрузки данных:', error);
         });
-
-        // Создаем строки для каждой группы
-        for (let i = 0; i < Math.max(groupA.length, groupB.length); i++) {
-          const tr = document.createElement('tr');
-
-          // Группа A
-          const cellA = groupA[i];
-          if (cellA) {
-            tr.innerHTML += `
-              <td>${cellA.c[0].v}</td>
-              <td><img src="${cellA.c[2].v}" alt="Логотип">${cellA.c[1].v}</td>
-              <td>${cellA.c[3].v}</td>
-            `;
-          } else {
-            tr.innerHTML += `<td></td><td></td><td></td>`;
-          }
-
-          // Группа B
-          const cellB = groupB[i];
-          if (cellB) {
-            tr.innerHTML += `
-              <td>${cellB.c[0].v}</td>
-              <td><img src="${cellB.c[2].v}" alt="Логотип">${cellB.c[1].v}</td>
-              <td>${cellB.c[3].v}</td>
-            `;
-          } else {
-            tr.innerHTML += `<td></td><td></td><td></td>`;
-          }
-
-          table.appendChild(tr);
-        }
-
-        document.getElementById('table').appendChild(table);
-      });
+    }
+    
+    // Загружаем данные сразу и каждые 30 секунд
+    loadData();
+    setInterval(loadData, 30000);
   </script>
 </body>
 </html>
